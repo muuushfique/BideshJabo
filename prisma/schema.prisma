@@ -1,0 +1,224 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String
+  passwordHash   String
+  role           String          @default("USER") // USER | ADMIN
+  studentProfile String          @default("{}") // JSON StudentProfile
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  savedItems     SavedItem[]
+  researchNotes  ResearchNote[]
+  journeys       UserJourney[]
+  financialPlans FinancialPlan[]
+  chatSessions   ChatSession[]
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  code      String   @unique // EUR, USD, GBP, CAD, AUD, SEK, NOK, DKK, PLN, KRW, TWD, JPY, BDT
+  name      String
+  symbol    String
+  rateToBdt Float
+  updatedAt DateTime @updatedAt
+}
+
+model Country {
+  id                  String         @id @default(cuid())
+  slug                String         @unique
+  name                String
+  flagEmoji           String
+  region              String         // Western Europe, Nordics, Central Europe, East Asia, North America
+  currencyCode        String
+  tagline             String
+  degreeLevels        String         // JSON array: ["Bachelor's","Master's","PhD","Diploma"]
+  fieldsOfStudy       String         // JSON array
+  tuitionMinAnnual    Float          // in currencyCode
+  tuitionMaxAnnual    Float
+  tuitionAvgAnnual    Float
+  tuitionNotes        String
+  livingCostTiers     String         // JSON { frugal: {rent,food,transport,utilities,insurance,misc,total}, balanced: {...}, comfortable: {...} }
+  proofOfFundsAmount  Float
+  proofOfFundsStyle   String         // Standard Bank Statement | Blocked Account | Credit Card Limit | Lab Funding Waiver
+  proofOfFundsNotes   String
+  visaPredictability  String         // High | Moderate | Risky
+  visaType            String
+  embassyLocation     String
+  embassyBacklog      String         // Low | Moderate | High | Severe
+  partTimeWageHourly  Float
+  skilledWageHourly   Float
+  workHoursCap        Int
+  partTimeSustain     String         // Odd Jobs Cover Living | Skilled Jobs Needed | Partial Only
+  languageBarrier     String         // English-Friendly | Bilingual Advantage | Local Language Required
+  stayBackMonths      Int
+  prDifficulty        String         // Straightforward | Moderate | Competitive
+  entrySalaryAnnual   Float
+  purchasingPowerNote String
+  pros                String         // JSON string[]
+  cons                String         // JSON string[]
+  groundReality       String         // JSON { housing, jobMarket, embassyWarning, bdCommunity, verdict }
+  legalizationSteps   String         // JSON string[]
+  prPathwaySteps      String         // JSON { step: string, timeline: string, detail: string }[]
+  journeyTemplates    String         // JSON { phase: string, title: string, priority: string, description: string, subtasks: string[] }[]
+  isFeatured          Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  universities        University[]
+  scholarships        Scholarship[]
+  researchNotes       ResearchNote[]
+  journeys            UserJourney[]
+}
+
+model University {
+  id               String    @id @default(cuid())
+  countryId        String
+  country          Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  slug             String    @unique
+  name             String
+  city             String
+  type             String    // Public | Private | Technical
+  qsRank           Int?
+  tuitionMin       Float
+  tuitionMax       Float
+  applicationFee   Float
+  ieltsMin         Float
+  toeflMin         Int?
+  greRequired      Boolean   @default(false)
+  intakeDeadlines  String    // JSON { fall: string, spring?: string }
+  portalUrl        String
+  fundingNotes     String
+  englishPrograms  Boolean   @default(true)
+  programs         Program[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Program {
+  id             String     @id @default(cuid())
+  universityId   String
+  university     University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  name           String
+  degreeLevel    String     // Bachelor's | Master's | PhD | Diploma
+  field          String
+  durationMonths Int
+  tuitionAnnual  Float
+  language       String     @default("English")
+  deadline       String
+  requirements   String
+}
+
+model Scholarship {
+  id                 String   @id @default(cuid())
+  countryId          String
+  country            Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name               String
+  provider           String   // Government | University | Lab/Professor
+  degreeLevels       String   // JSON array
+  coverageType       String   // Full Tuition + Stipend | Tuition Waiver | Monthly Stipend
+  amountAnnual       Float
+  currencyCode       String
+  realisticOdds      String   // High (Funding-backed) | Moderate | Competitive | Very Low
+  oddsExplanation    String
+  deadline           String
+  eligibilitySummary String
+  url                String
+  createdAt          DateTime @default(now())
+}
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemType  String   // COUNTRY | UNIVERSITY
+  itemId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemType, itemId])
+}
+
+model ResearchNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, countryId])
+}
+
+model UserJourney {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  countryId    String
+  country      Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  targetIntake String        @default("Fall 2027")
+  degreeLevel  String        @default("Master's")
+  tasks        JourneyTask[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, countryId])
+}
+
+model JourneyTask {
+  id          String      @id @default(cuid())
+  journeyId   String
+  journey     UserJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  phase       String
+  title       String
+  description String      @default("")
+  isCompleted Boolean     @default(false)
+  priority    String      @default("Medium") // High | Medium | Low
+  dueDate     String?
+  subtasks    String      @default("[]") // JSON { id: string, title: string, done: boolean }[]
+  sortOrder   Int         @default(0)
+  isCustom    Boolean     @default(false)
+}
+
+model FinancialPlan {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String          @default("Primary Study Abroad Plan")
+  targetCountrySlug String          @default("poland")
+  totalBudgetBdt    Float           @default(2500000)
+  pofTargetBdt      Float           @default(1400000)
+  seasoningStart    String?
+  seasoningDaysReq  Int             @default(90)
+  items             FinancialItem[]
+  updatedAt         DateTime        @updatedAt
+}
+
+model FinancialItem {
+  id           String        @id @default(cuid())
+  planId       String
+  plan         FinancialPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category     String        // UPFRONT | POF_SOURCE
+  label        String
+  amount       Float
+  currencyCode String
+  isPaid       Boolean       @default(false)
+  notes        String        @default("")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("Study Abroad Session")
+  messages  String   @default("[]") // JSON ChatMessage[]
+  updatedAt DateTime @updatedAt
+}
