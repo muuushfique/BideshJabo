@@ -297,7 +297,7 @@ export function AdvisorChat({
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <StudentProfileCard compact={compact} />
+      <StudentProfileCard />
 
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

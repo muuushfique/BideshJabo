@@ -49,12 +49,12 @@ export function FinancesClient() {
 
   // Simulator state
   const targetCountry =
-    countries.find((c) => c.slug === financialPlan.targetCountrySlug) || countries[0];
+    countries.find((c) => c.slug === financialPlan.targetCountrySlug) || null;
   const [simCountrySlug, setSimCountrySlug] = useState(
-    targetCountry?.slug || "poland"
+    financialPlan.targetCountrySlug || countries[0]?.slug || "poland"
   );
   const simCountry =
-    countries.find((c) => c.slug === simCountrySlug) || targetCountry;
+    countries.find((c) => c.slug === simCountrySlug) || countries[0];
 
   const [jobMode, setJobMode] = useState<"odd" | "skilled">("odd");
   const [hoursPerWeek, setHoursPerWeek] = useState<number>(
@@ -276,22 +276,27 @@ export function FinancesClient() {
         <div className="flex items-center gap-2">
           <select
             value={financialPlan.targetCountrySlug}
-            onChange={(e) => applyCountryPreset(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value) applyCountryPreset(e.target.value);
+            }}
             className="h-9 rounded-xl border border-border bg-card px-3 text-xs font-medium"
           >
+            <option value="">Load Sample Country Estimate...</option>
             {countries.map((c) => (
               <option key={c.id} value={c.slug}>
                 Preset: {c.flagEmoji} {c.name}
               </option>
             ))}
           </select>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => applyCountryPreset(financialPlan.targetCountrySlug)}
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Reset Preset
-          </Button>
+          {financialPlan.targetCountrySlug && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => applyCountryPreset(financialPlan.targetCountrySlug)}
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Refresh Preset
+            </Button>
+          )}
         </div>
       </div>
 
@@ -305,8 +310,10 @@ export function FinancesClient() {
           <div className="flex items-center gap-2">
             <input
               type="number"
+              min={0}
               step={50000}
-              value={financialPlan.totalBudgetBdt}
+              placeholder="Enter BDT budget"
+              value={financialPlan.totalBudgetBdt || ""}
               onChange={(e) =>
                 updatePlan({ totalBudgetBdt: Number(e.target.value) || 0 })
               }
@@ -314,7 +321,9 @@ export function FinancesClient() {
             />
           </div>
           <div className="font-mono text-[11px] text-emerald-400">
-            {formatBdt(financialPlan.totalBudgetBdt, formatMode)}
+            {financialPlan.totalBudgetBdt > 0
+              ? formatBdt(financialPlan.totalBudgetBdt, formatMode)
+              : "Set your BDT budget above"}
           </div>
         </Card>
 
@@ -407,53 +416,62 @@ export function FinancesClient() {
               </span>
             </div>
 
-            <div className="divide-y divide-border/70">
-              {upfrontItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <button
-                      onClick={() => toggleItemPaid(item.id)}
-                      className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-md border transition ${
-                        item.isPaid
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-border bg-background"
-                      }`}
-                    >
-                      {item.isPaid && <CheckCircle2 className="h-3.5 w-3.5" />}
-                    </button>
-                    <div>
-                      <div
-                        className={`text-sm font-medium ${
-                          item.isPaid ? "line-through text-muted-foreground" : ""
+            {upfrontItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-background/40 p-6 text-center space-y-2">
+                <p className="text-sm font-medium">No expenses added yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Add your own pre-departure expenses on the right, or select a country from &ldquo;Load Sample Country Estimate&rdquo; above.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/70">
+                {upfrontItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <button
+                        onClick={() => toggleItemPaid(item.id)}
+                        className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-md border transition ${
+                          item.isPaid
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-border bg-background"
                         }`}
                       >
-                        {item.label}
+                        {item.isPaid && <CheckCircle2 className="h-3.5 w-3.5" />}
+                      </button>
+                      <div>
+                        <div
+                          className={`text-sm font-medium ${
+                            item.isPaid ? "line-through text-muted-foreground" : ""
+                          }`}
+                        >
+                          {item.label}
+                        </div>
+                        {item.notes && (
+                          <div className="text-[11px] text-muted-foreground">{item.notes}</div>
+                        )}
                       </div>
-                      {item.notes && (
-                        <div className="text-[11px] text-muted-foreground">{item.notes}</div>
-                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <DualCurrency
+                        amount={item.amount}
+                        currencyCode={item.currencyCode}
+                        size="sm"
+                      />
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-rose-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <DualCurrency
-                      amount={item.amount}
-                      currencyCode={item.currencyCode}
-                      size="sm"
-                    />
-                    <button
-                      onClick={() => deleteItem(item.id)}
-                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-rose-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           <Card className="p-5 space-y-3 h-fit">
@@ -530,34 +548,40 @@ export function FinancesClient() {
               />
             </div>
 
-            <div className="divide-y divide-border/70">
-              {pofItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 py-3"
-                >
-                  <div>
-                    <div className="text-sm font-medium">{item.label}</div>
-                    {item.notes && (
-                      <div className="text-[11px] text-muted-foreground">{item.notes}</div>
-                    )}
+            {pofItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-background/40 p-5 text-center text-xs text-muted-foreground">
+                No funding sources added yet. Add savings, FDR, family sponsorship, or blocked account deposits below.
+              </div>
+            ) : (
+              <div className="divide-y divide-border/70">
+                {pofItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 py-3"
+                  >
+                    <div>
+                      <div className="text-sm font-medium">{item.label}</div>
+                      {item.notes && (
+                        <div className="text-[11px] text-muted-foreground">{item.notes}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <DualCurrency
+                        amount={item.amount}
+                        currencyCode={item.currencyCode}
+                        size="sm"
+                      />
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        className="rounded p-1 text-muted-foreground hover:text-rose-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <DualCurrency
-                      amount={item.amount}
-                      currencyCode={item.currencyCode}
-                      size="sm"
-                    />
-                    <button
-                      onClick={() => deleteItem(item.id)}
-                      className="rounded p-1 text-muted-foreground hover:text-rose-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="border-t border-border pt-3 space-y-2">
               <div className="text-xs font-semibold">Add Solvency Source</div>

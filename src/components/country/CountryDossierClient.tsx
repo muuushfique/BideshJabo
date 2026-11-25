@@ -41,13 +41,13 @@ import { SlideOverDrawer } from "../ui/SlideOverDrawer";
 import { Badge, Button, Card, visaBadgeVariant } from "../ui/primitives";
 
 const TABS = [
-  { id: "overview", label: "Overview & Reality", icon: Sparkles },
-  { id: "universities", label: "Universities & Programs", icon: GraduationCap },
-  { id: "scholarships", label: "Tuition & Scholarships", icon: Award },
-  { id: "visa", label: "Visa & Proof of Funds", icon: ShieldAlert },
-  { id: "living", label: "Part-Time & Living", icon: Briefcase },
-  { id: "postgrad", label: "Post-Grad, Salary & PR", icon: Plane },
-  { id: "notes", label: "Research Notes", icon: FileText },
+  { id: "overview", label: "Overview", icon: Sparkles },
+  { id: "universities", label: "Universities", icon: GraduationCap },
+  { id: "scholarships", label: "Scholarships", icon: Award },
+  { id: "visa", label: "Visa & Funds", icon: ShieldAlert },
+  { id: "living", label: "Living & Jobs", icon: Briefcase },
+  { id: "postgrad", label: "Salary & PR", icon: Plane },
+  { id: "notes", label: "My Notes", icon: FileText },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];

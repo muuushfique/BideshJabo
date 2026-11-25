@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { readGuestWorkspace, writeGuestWorkspace } from "@/lib/guest-storage";
 import { DEFAULT_STUDENT_PROFILE } from "@/lib/serializers";
 import type {
   AuthUserDTO,
@@ -14,33 +15,21 @@ import type {
 } from "@/lib/types";
 import { useCurrency } from "./CurrencyProvider";
 
-const GUEST_STORAGE_KEY = "bideshjabo_guest_v1";
-
 const DEFAULT_FINANCIAL_PLAN: FinancialPlanDTO = {
   id: "guest-plan",
-  name: "Primary Study Abroad Plan",
-  targetCountrySlug: "poland",
-  totalBudgetBdt: 2200000,
-  pofTargetBdt: 1150000,
-  seasoningStart: new Date(Date.now() - 42 * 86400000).toISOString().slice(0, 10),
+  name: "My Study Abroad Budget",
+  targetCountrySlug: "",
+  totalBudgetBdt: 0,
+  pofTargetBdt: 0,
+  seasoningStart: null,
   seasoningDaysReq: 90,
-  items: [
-    { id: "fi-1", category: "UPFRONT", label: "IELTS Academic Test Fee", amount: 27500, currencyCode: "BDT", isPaid: true, notes: "British Council / IDP Dhaka" },
-    { id: "fi-2", category: "UPFRONT", label: "University Application Fees (3 Unis)", amount: 255, currencyCode: "PLN", isPaid: false, notes: "85 PLN per public uni" },
-    { id: "fi-3", category: "UPFRONT", label: "MoFA, Apostille & Sworn Translation", amount: 18000, currencyCode: "BDT", isPaid: false, notes: "Education Board + MoFA Dhaka" },
-    { id: "fi-4", category: "UPFRONT", label: "First-Semester Tuition Deposit", amount: 8750, currencyCode: "PLN", isPaid: false, notes: "50% of annual tuition" },
-    { id: "fi-5", category: "UPFRONT", label: "Student Health Insurance (1 Year)", amount: 650, currencyCode: "PLN", isPaid: false, notes: "Required for D-Visa" },
-    { id: "fi-6", category: "UPFRONT", label: "VFS / Embassy Visa + New Delhi Travel", amount: 45000, currencyCode: "BDT", isPaid: false, notes: "Includes Indian visa & flight" },
-    { id: "fi-7", category: "UPFRONT", label: "One-Way Flight + First Month Cash", amount: 145000, currencyCode: "BDT", isPaid: false, notes: "Qatar/Turkish student fare + initial cash" },
-    { id: "pof-1", category: "POF_SOURCE", label: "Personal / Sponsor Liquid Savings", amount: 850000, currencyCode: "BDT", isPaid: true, notes: "Seasoned bank account" },
-    { id: "pof-2", category: "POF_SOURCE", label: "Family FDR / Credit Card Limit", amount: 450000, currencyCode: "BDT", isPaid: true, notes: "Backing buffer" },
-  ],
+  items: [],
 };
 
 const DEFAULT_GUEST_STATE: GuestWorkspaceState = {
-  shortlistCountries: ["poland", "germany"],
+  shortlistCountries: [],
   shortlistUniversities: [],
-  compareCountries: ["poland", "germany", "sweden"],
+  compareCountries: [],
   compareUniversities: [],
   researchNotes: {},
   journeys: [],
@@ -108,32 +97,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const persistGuest = useCallback((next: GuestWorkspaceState) => {
-    try {
-      localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage quota errors
-    }
+    writeGuestWorkspace(next);
   }, []);
 
   const readGuest = useCallback((): GuestWorkspaceState => {
-    try {
-      const raw = localStorage.getItem(GUEST_STORAGE_KEY);
-      if (!raw) return DEFAULT_GUEST_STATE;
-      const parsed = JSON.parse(raw) as Partial<GuestWorkspaceState>;
-      return {
-        ...DEFAULT_GUEST_STATE,
-        ...parsed,
-        studentProfile: {
-          ...DEFAULT_STUDENT_PROFILE,
-          ...(parsed.studentProfile || {}),
-        },
-        financialPlan: parsed.financialPlan?.items
-          ? parsed.financialPlan
-          : DEFAULT_FINANCIAL_PLAN,
-      };
-    } catch {
-      return DEFAULT_GUEST_STATE;
-    }
+    return readGuestWorkspace(DEFAULT_GUEST_STATE);
   }, []);
 
   const loadWorkspaceFromServer = useCallback(async () => {
@@ -282,7 +250,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   );
 
   const startJourney = useCallback(
-    async (countrySlug: string, targetIntake = "Fall 2027", degreeLevel = "Master's") => {
+    async (countrySlug: string, targetIntake?: string, degreeLevel?: string) => {
+      const safeIntake = targetIntake?.trim() || "Fall 2027";
+      const safeDegree = degreeLevel?.trim() || "Master's";
       const existing = state.journeys.find((j) => j.countrySlug === countrySlug);
       if (existing) {
         showToast(`${existing.countryName} journey is already active`);
@@ -293,7 +263,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/journeys", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ countrySlug, targetIntake, degreeLevel }),
+          body: JSON.stringify({
+            countrySlug,
+            targetIntake: safeIntake,
+            degreeLevel: safeDegree,
+          }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -332,8 +306,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         countrySlug: country.slug,
         countryName: country.name,
         countryFlag: country.flagEmoji,
-        targetIntake,
-        degreeLevel,
+        targetIntake: safeIntake,
+        degreeLevel: safeDegree,
         tasks,
         updatedAt: new Date().toISOString(),
       };

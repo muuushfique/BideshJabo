@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, GitCompare, Plus, Printer, X } from "lucide-react";
+import { Download, GitCompare, Printer, X } from "lucide-react";
 import { convertToBdt, formatBdt, formatLocalCurrency } from "@/lib/currency";
 import type { LifestyleTierKey } from "@/lib/types";
 import { useCurrency } from "../providers/CurrencyProvider";
@@ -152,27 +152,44 @@ export function CompareClient() {
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/80 p-3 no-print">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                Add / Toggle Countries:
-              </span>
-              {countries.map((c) => {
-                const active = compareCountries.includes(c.slug);
-                return (
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) toggleCompareCountry(e.target.value);
+                }}
+                disabled={compareCountries.length >= 4}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-medium"
+              >
+                <option value="">
+                  {compareCountries.length >= 4
+                    ? "Max 4 countries selected"
+                    : "+ Add Country to Compare..."}
+                </option>
+                {countries
+                  .filter((c) => !compareCountries.includes(c.slug))
+                  .map((c) => (
+                    <option key={c.id} value={c.slug}>
+                      {c.flagEmoji} {c.name}
+                    </option>
+                  ))}
+              </select>
+
+              {selectedCountries.map((c) => (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300"
+                >
+                  <span>{c.flagEmoji}</span>
+                  <span>{c.name}</span>
                   <button
-                    key={c.id}
                     onClick={() => toggleCompareCountry(c.slug)}
-                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition ${
-                      active
-                        ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-400 font-medium"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
+                    className="hover:text-white"
+                    aria-label={`Remove ${c.name}`}
                   >
-                    <span>{c.flagEmoji}</span>
-                    <span>{c.name}</span>
-                    {active ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                    <X className="h-3 w-3" />
                   </button>
-                );
-              })}
+                </span>
+              ))}
             </div>
 
             <select
@@ -187,12 +204,21 @@ export function CompareClient() {
           </div>
 
           {selectedCountries.length === 0 ? (
-            <Card className="p-10 text-center space-y-3">
-              <GitCompare className="mx-auto h-8 w-8 text-muted-foreground" />
-              <h2 className="font-display text-base font-semibold">No Countries Selected</h2>
-              <p className="text-xs text-muted-foreground">
-                Select up to 4 countries above to view the side-by-side matrix.
-              </p>
+            <Card className="p-12 text-center space-y-4">
+              <GitCompare className="mx-auto h-9 w-9 text-indigo-400" />
+              <div className="space-y-1">
+                <h2 className="font-display text-base font-semibold">
+                  Your Comparison Matrix is Clean
+                </h2>
+                <p className="mx-auto max-w-md text-xs text-muted-foreground">
+                  Use the &ldquo;+ Add Country to Compare&rdquo; menu above or click Compare on any country in Explorer to place up to 4 destinations side-by-side.
+                </p>
+              </div>
+              <Link href="/explore">
+                <Button size="sm" variant="secondary">
+                  Browse Countries in Explore
+                </Button>
+              </Link>
             </Card>
           ) : (
             <Card className="overflow-x-auto">
@@ -369,26 +395,44 @@ export function CompareClient() {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/80 p-3 no-print">
-            <span className="text-xs font-medium text-muted-foreground">
-              Select up to 4 Universities:
-            </span>
-            {allUniversities.map((u) => {
-              const active = compareUniversities.includes(u.slug);
-              return (
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) toggleCompareUniversity(e.target.value);
+              }}
+              disabled={compareUniversities.length >= 4}
+              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-medium"
+            >
+              <option value="">
+                {compareUniversities.length >= 4
+                  ? "Max 4 universities selected"
+                  : "+ Add University to Compare..."}
+              </option>
+              {allUniversities
+                .filter((u) => !compareUniversities.includes(u.slug))
+                .map((u) => (
+                  <option key={u.id} value={u.slug}>
+                    {u.country.flagEmoji} {u.name} ({u.country.name})
+                  </option>
+                ))}
+            </select>
+
+            {selectedUniversities.map((u) => (
+              <span
+                key={u.id}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300"
+              >
+                <span>{u.country.flagEmoji}</span>
+                <span>{u.name}</span>
                 <button
-                  key={u.id}
                   onClick={() => toggleCompareUniversity(u.slug)}
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] transition ${
-                    active
-                      ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-400 font-medium"
-                      : "border-border text-muted-foreground hover:text-foreground"
-                  }`}
+                  className="hover:text-white"
+                  aria-label={`Remove ${u.name}`}
                 >
-                  <span>{u.country.flagEmoji}</span>
-                  <span>{u.name}</span>
+                  <X className="h-3 w-3" />
                 </button>
-              );
-            })}
+              </span>
+            ))}
           </div>
 
           {selectedUniversities.length === 0 ? (

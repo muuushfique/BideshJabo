@@ -31,14 +31,14 @@ export function safeJsonParse<T>(raw: string | null | undefined, fallback: T): T
 }
 
 export const DEFAULT_STUDENT_PROFILE: StudentProfile = {
-  degreeTarget: "Master's",
-  cgpa: "3.45 / 4.00",
-  major: "Computer Science & Engineering",
-  workExperienceYears: 1,
-  budgetBdt: 2200000,
-  ieltsScore: "7.0",
+  degreeTarget: "",
+  cgpa: "",
+  major: "",
+  workExperienceYears: 0,
+  budgetBdt: 0,
+  ieltsScore: "",
   preferredLifestyle: "balanced",
-  targetIntake: "Fall 2027",
+  targetIntake: "",
 };
 
 const EMPTY_TIER = {

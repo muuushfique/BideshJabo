@@ -36,23 +36,26 @@ export function scoreCountriesForProfile(
       const pofBdt = convertToBdt(country.proofOfFundsAmount, country.currencyCode, rateMap);
       const firstYearCostBdt = tuitionBdt + livingMonthlyBdt * 12;
 
-      // Degree match
-      if (country.degreeLevels.includes(profile.degreeTarget)) {
-        score += 12;
-      } else {
-        score -= 20;
+      // Degree match (only score if student set a target)
+      if (profile.degreeTarget) {
+        if (country.degreeLevels.includes(profile.degreeTarget)) {
+          score += 12;
+        } else {
+          score -= 20;
+        }
       }
 
       // Field / major match
-      const majorLower = profile.major.toLowerCase();
+      const majorLower = profile.major.trim().toLowerCase();
       if (
+        majorLower &&
         country.fieldsOfStudy.some((f) => {
           const fl = f.toLowerCase();
           return (
             fl.includes(majorLower) ||
-            majorLower.includes("computer") && fl.includes("computer") ||
-            majorLower.includes("eng") && fl.includes("engineering") ||
-            majorLower.includes("business") && fl.includes("business")
+            (majorLower.includes("computer") && fl.includes("computer")) ||
+            (majorLower.includes("eng") && fl.includes("engineering")) ||
+            (majorLower.includes("business") && fl.includes("business"))
           );
         })
       ) {
@@ -60,18 +63,23 @@ export function scoreCountriesForProfile(
         reasons.push(`Strong programs in ${profile.major}`);
       }
 
-      // Budget fit
-      if (profile.budgetBdt >= firstYearCostBdt * 0.9) {
-        score += 20;
-        reasons.push(`Fits within your ${formatBdt(profile.budgetBdt)} budget`);
+      // Budget fit (only filter/penalize if student entered a budget > 0)
+      if (profile.budgetBdt > 0) {
+        if (profile.budgetBdt >= firstYearCostBdt * 0.9) {
+          score += 20;
+          reasons.push(`Fits within your ${formatBdt(profile.budgetBdt)} budget`);
+        } else if (country.proofOfFundsStyle === "Lab Funding Waiver") {
+          score += 18;
+          reasons.push("Lab/professor funding can waive tuition & bank solvency");
+        } else if (profile.budgetBdt >= pofBdt) {
+          score += 6;
+          reasons.push("Meets upfront proof-of-funds threshold");
+        } else {
+          score -= 15;
+        }
       } else if (country.proofOfFundsStyle === "Lab Funding Waiver") {
-        score += 18;
-        reasons.push("Lab/professor funding can waive tuition & bank solvency");
-      } else if (profile.budgetBdt >= pofBdt) {
-        score += 6;
-        reasons.push("Meets upfront proof-of-funds threshold");
-      } else {
-        score -= 15;
+        score += 8;
+        reasons.push("Lab/professor funding options available");
       }
 
       // Visa predictability
@@ -156,10 +164,23 @@ export function buildGroundedAdvice(
     });
   }
 
+  const profileParts: string[] = [];
+  if (profile.degreeTarget) profileParts.push(`**${profile.degreeTarget}**`);
+  if (profile.major) profileParts.push(`in **${profile.major}**`);
+  if (profile.cgpa) profileParts.push(`CGPA **${profile.cgpa}**`);
+  if (profile.ieltsScore) profileParts.push(`IELTS **${profile.ieltsScore}**`);
+  if (profile.budgetBdt > 0) profileParts.push(`Budget **${formatBdt(profile.budgetBdt, "exact")}**`);
+
   const lines: string[] = [];
-  lines.push(
-    `Based on your profile (**${profile.degreeTarget}** in **${profile.major}**, CGPA **${profile.cgpa}**, IELTS **${profile.ieltsScore}**, Budget **${formatBdt(profile.budgetBdt, "exact")}**, **${tierKey}** lifestyle), here is my grounded analysis:\n`
-  );
+  if (profileParts.length > 0) {
+    lines.push(
+      `Based on your profile (${profileParts.join(" • ")} • **${tierKey}** lifestyle), here is my grounded analysis:\n`
+    );
+  } else {
+    lines.push(
+      `Here is a balanced analysis from BideshJabo's live database (**${tierKey}** lifestyle). *(Tip: expand **Student Profile** above anytime to tailor results to your budget, GPA, and major.)*\n`
+    );
+  }
 
   if (q.includes("visa") || q.includes("pof") || q.includes("bank") || q.includes("embassy")) {
     lines.push("### Visa & Proof-of-Funds Breakdown\n");

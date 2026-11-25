@@ -144,7 +144,7 @@ export interface CountryDTO {
 }
 
 export interface StudentProfile {
-  degreeTarget: DegreeLevel;
+  degreeTarget: DegreeLevel | "";
   cgpa: string;
   major: string;
   workExperienceYears: number;

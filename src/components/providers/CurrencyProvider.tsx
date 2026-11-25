@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { buildRateMap } from "@/lib/currency";
+import { readGuestCookie, writeGuestCookie } from "@/lib/guest-storage";
 import type {
   CountryDTO,
   CurrencyFormatMode,
@@ -49,11 +50,16 @@ export function CurrencyProvider({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("bideshjabo_bdt_mode") as CurrencyFormatMode | null;
+    const cookiePrefs = readGuestCookie();
+    const savedMode =
+      cookiePrefs.formatMode ||
+      (localStorage.getItem("bideshjabo_bdt_mode") as CurrencyFormatMode | null);
     if (savedMode === "exact" || savedMode === "compact") {
       setFormatMode(savedMode);
     }
-    const savedTier = localStorage.getItem("bideshjabo_lifestyle") as LifestyleTierKey | null;
+    const savedTier =
+      cookiePrefs.lifestyleTier ||
+      (localStorage.getItem("bideshjabo_lifestyle") as LifestyleTierKey | null);
     if (savedTier === "frugal" || savedTier === "balanced" || savedTier === "comfortable") {
       setLifestyleTier(savedTier);
     }
@@ -63,6 +69,7 @@ export function CurrencyProvider({
     setFormatMode((prev) => {
       const next = prev === "compact" ? "exact" : "compact";
       localStorage.setItem("bideshjabo_bdt_mode", next);
+      writeGuestCookie({ formatMode: next });
       return next;
     });
   }, []);
@@ -70,6 +77,7 @@ export function CurrencyProvider({
   const handleSetLifestyleTier = useCallback((tier: LifestyleTierKey) => {
     setLifestyleTier(tier);
     localStorage.setItem("bideshjabo_lifestyle", tier);
+    writeGuestCookie({ lifestyleTier: tier });
   }, []);
 
   const refreshPlatformData = useCallback(async () => {

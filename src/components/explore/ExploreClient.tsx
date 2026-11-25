@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Bookmark,
   Check,
+  ChevronDown,
   Filter,
   GitCompare,
   RotateCcw,
@@ -33,10 +34,10 @@ const FIELD_OPTIONS = [
   "Arts & Humanities",
 ];
 
-const LIFESTYLE_LABELS: { key: LifestyleTierKey; title: string; subtitle: string }[] = [
-  { key: "frugal", title: "Frugal / Dorm", subtitle: "Shared room, home cooking" },
-  { key: "balanced", title: "Balanced / Shared", subtitle: "Private room, transit, social" },
-  { key: "comfortable", title: "Comfortable / Studio", subtitle: "Private studio, dining out" },
+const LIFESTYLE_LABELS: { key: LifestyleTierKey; title: string }[] = [
+  { key: "frugal", title: "Frugal" },
+  { key: "balanced", title: "Balanced" },
+  { key: "comfortable", title: "Comfortable" },
 ];
 
 export function ExploreClient() {
@@ -68,6 +69,43 @@ export function ExploreClient() {
   const [prDifficulty, setPrDifficulty] = useState("All");
   const [sortBy, setSortBy] = useState<"cost" | "visa" | "stayback" | "tuition">("cost");
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+
+  // Tidy accordion sections
+  const [openGroup, setOpenGroup] = useState<{
+    academics: boolean;
+    budget: boolean;
+    rules: boolean;
+  }>({ academics: true, budget: true, rules: false });
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (region !== "All") count++;
+    if (degreeLevel !== "All") count++;
+    if (fieldOfStudy !== "All") count++;
+    if (maxTuitionBdt < 5000000) count++;
+    if (maxPofBdt < 3500000) count++;
+    if (maxLivingMonthlyBdt < 350000) count++;
+    if (visaFilter !== "All") count++;
+    if (pofStyle !== "All") count++;
+    if (partTimeFilter !== "All") count++;
+    if (languageFilter !== "All") count++;
+    if (minStayBack > 0) count++;
+    if (prDifficulty !== "All") count++;
+    return count;
+  }, [
+    region,
+    degreeLevel,
+    fieldOfStudy,
+    maxTuitionBdt,
+    maxPofBdt,
+    maxLivingMonthlyBdt,
+    visaFilter,
+    pofStyle,
+    partTimeFilter,
+    languageFilter,
+    minStayBack,
+    prDifficulty,
+  ]);
 
   const resetFilters = () => {
     setQuery("");
@@ -165,256 +203,306 @@ export function ExploreClient() {
   ]);
 
   const filterPanel = (
-    <Card className="p-4 space-y-5 h-fit">
-      <div className="flex items-center justify-between">
+    <Card className="p-4 space-y-3 h-fit">
+      <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2 font-display text-sm font-semibold">
           <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
-          Discovery Filters
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-indigo-500/20 px-1.5 py-0.5 font-mono text-[10px] text-indigo-400">
+              {activeFilterCount}
+            </span>
+          )}
         </div>
+        {activeFilterCount > 0 && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-3 w-3" /> Reset
+          </button>
+        )}
+      </div>
+
+      {/* Group 1: Academics & Region */}
+      <div className="border-b border-border/70 pb-3">
         <button
-          onClick={resetFilters}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          type="button"
+          onClick={() => setOpenGroup((g) => ({ ...g, academics: !g.academics }))}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground"
         >
-          <RotateCcw className="h-3 w-3" /> Reset
+          <span>Academics &amp; Region</span>
+          <ChevronDown
+            className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+              openGroup.academics ? "rotate-180" : ""
+            }`}
+          />
         </button>
+        {openGroup.academics && (
+          <div className="mt-2.5 space-y-2.5">
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Degree Level</span>
+              <select
+                value={degreeLevel}
+                onChange={(e) => setDegreeLevel(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                {DEGREE_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Field of Study</span>
+              <select
+                value={fieldOfStudy}
+                onChange={(e) => setFieldOfStudy(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                {FIELD_OPTIONS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Region</span>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">All Regions</option>
+                <option value="Western Europe">Western Europe</option>
+                <option value="Central Europe">Central Europe</option>
+                <option value="Nordics">Nordics</option>
+                <option value="East Asia">East Asia</option>
+                <option value="North America">North America</option>
+              </select>
+            </label>
+          </div>
+        )}
       </div>
 
-      {/* Degree & Field */}
-      <div className="space-y-2.5">
-        <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-muted-foreground">Degree Level</span>
-          <select
-            value={degreeLevel}
-            onChange={(e) => setDegreeLevel(e.target.value)}
-            className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-xs"
-          >
-            {DEGREE_OPTIONS.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </label>
+      {/* Group 2: Budget Caps */}
+      <div className="border-b border-border/70 pb-3">
+        <button
+          type="button"
+          onClick={() => setOpenGroup((g) => ({ ...g, budget: !g.budget }))}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground"
+        >
+          <span>Budget Caps (BDT)</span>
+          <ChevronDown
+            className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+              openGroup.budget ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {openGroup.budget && (
+          <div className="mt-2.5 space-y-3">
+            <label className="block space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Max Tuition / Yr</span>
+                <span className="font-mono font-semibold text-emerald-400">
+                  {formatBdt(maxTuitionBdt, formatMode)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={5000000}
+                step={100000}
+                value={maxTuitionBdt}
+                onChange={(e) => setMaxTuitionBdt(Number(e.target.value))}
+                className="w-full accent-indigo-500"
+              />
+            </label>
 
-        <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-muted-foreground">Field of Study</span>
-          <select
-            value={fieldOfStudy}
-            onChange={(e) => setFieldOfStudy(e.target.value)}
-            className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-xs"
-          >
-            {FIELD_OPTIONS.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-        </label>
+            <label className="block space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Max Proof of Funds</span>
+                <span className="font-mono font-semibold text-emerald-400">
+                  {formatBdt(maxPofBdt, formatMode)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={500000}
+                max={3500000}
+                step={100000}
+                value={maxPofBdt}
+                onChange={(e) => setMaxPofBdt(Number(e.target.value))}
+                className="w-full accent-indigo-500"
+              />
+            </label>
 
-        <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-muted-foreground">Region</span>
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-xs"
-          >
-            <option value="All">All Regions</option>
-            <option value="Western Europe">Western Europe</option>
-            <option value="Central Europe">Central Europe</option>
-            <option value="Nordics">Nordics</option>
-            <option value="East Asia">East Asia</option>
-            <option value="North America">North America</option>
-          </select>
-        </label>
+            <label className="block space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Max Living / Month</span>
+                <span className="font-mono font-semibold text-emerald-400">
+                  {formatBdt(maxLivingMonthlyBdt, formatMode)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={60000}
+                max={350000}
+                step={10000}
+                value={maxLivingMonthlyBdt}
+                onChange={(e) => setMaxLivingMonthlyBdt(Number(e.target.value))}
+                className="w-full accent-indigo-500"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
-      {/* BDT Budget Sliders */}
-      <div className="space-y-3 border-t border-border pt-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Budget Caps (BDT)
-        </div>
-
-        <label className="block space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Max Tuition / Yr</span>
-            <span className="font-mono font-semibold text-emerald-400">
-              {formatBdt(maxTuitionBdt, formatMode)}
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={5000000}
-            step={100000}
-            value={maxTuitionBdt}
-            onChange={(e) => setMaxTuitionBdt(Number(e.target.value))}
-            className="w-full accent-indigo-500"
+      {/* Group 3: Visa, Work & PR Rules */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setOpenGroup((g) => ({ ...g, rules: !g.rules }))}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground"
+        >
+          <span>Visa, Work &amp; PR Rules</span>
+          <ChevronDown
+            className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+              openGroup.rules ? "rotate-180" : ""
+            }`}
           />
-        </label>
+        </button>
+        {openGroup.rules && (
+          <div className="mt-2.5 space-y-2.5">
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Visa Predictability</span>
+              <select
+                value={visaFilter}
+                onChange={(e) => setVisaFilter(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">Any</option>
+                <option value="High">High</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Risky">Risky</option>
+              </select>
+            </label>
 
-        <label className="block space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Max Proof of Funds</span>
-            <span className="font-mono font-semibold text-emerald-400">
-              {formatBdt(maxPofBdt, formatMode)}
-            </span>
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Proof of Funds Style</span>
+              <select
+                value={pofStyle}
+                onChange={(e) => setPofStyle(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">Any Style</option>
+                <option value="Standard Bank Statement">Standard Bank Statement</option>
+                <option value="Blocked Account">Blocked Account (Sperrkonto)</option>
+                <option value="Credit Card Limit">Credit Card Limit</option>
+                <option value="Lab Funding Waiver">Lab Funding Waiver</option>
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Part-Time Sustainability</span>
+              <select
+                value={partTimeFilter}
+                onChange={(e) => setPartTimeFilter(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">Any</option>
+                <option value="Odd Jobs Cover Living">Odd Jobs Cover Living</option>
+                <option value="Skilled Jobs Needed">Skilled Jobs Needed</option>
+                <option value="Partial Only">Partial Only</option>
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Language Barrier</span>
+              <select
+                value={languageFilter}
+                onChange={(e) => setLanguageFilter(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">Any</option>
+                <option value="English-Friendly">English-Friendly</option>
+                <option value="Bilingual Advantage">Bilingual Advantage</option>
+                <option value="Local Language Required">Local Language Required</option>
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">Min Stay-Back Visa</span>
+              <select
+                value={minStayBack}
+                onChange={(e) => setMinStayBack(Number(e.target.value))}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value={0}>Any Duration</option>
+                <option value={12}>12+ Months</option>
+                <option value={18}>18+ Months</option>
+                <option value={24}>24+ Months</option>
+                <option value={36}>36 Months (3 Years)</option>
+              </select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] text-muted-foreground">PR Pathway Difficulty</span>
+              <select
+                value={prDifficulty}
+                onChange={(e) => setPrDifficulty(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="All">Any</option>
+                <option value="Straightforward">Straightforward</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Competitive">Competitive</option>
+              </select>
+            </label>
           </div>
-          <input
-            type="range"
-            min={500000}
-            max={3500000}
-            step={100000}
-            value={maxPofBdt}
-            onChange={(e) => setMaxPofBdt(Number(e.target.value))}
-            className="w-full accent-indigo-500"
-          />
-        </label>
-
-        <label className="block space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Max Living / Month</span>
-            <span className="font-mono font-semibold text-emerald-400">
-              {formatBdt(maxLivingMonthlyBdt, formatMode)}
-            </span>
-          </div>
-          <input
-            type="range"
-            min={60000}
-            max={350000}
-            step={10000}
-            value={maxLivingMonthlyBdt}
-            onChange={(e) => setMaxLivingMonthlyBdt(Number(e.target.value))}
-            className="w-full accent-indigo-500"
-          />
-        </label>
-      </div>
-
-      {/* Strategic Filters */}
-      <div className="space-y-2.5 border-t border-border pt-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Strategic Rules
-        </div>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">Visa Predictability</span>
-          <select
-            value={visaFilter}
-            onChange={(e) => setVisaFilter(e.target.value)}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value="All">Any</option>
-            <option value="High">High</option>
-            <option value="Moderate">Moderate</option>
-            <option value="Risky">Risky</option>
-          </select>
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">Proof of Funds Style</span>
-          <select
-            value={pofStyle}
-            onChange={(e) => setPofStyle(e.target.value)}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value="All">Any Style</option>
-            <option value="Standard Bank Statement">Standard Bank Statement</option>
-            <option value="Blocked Account">Blocked Account (Sperrkonto)</option>
-            <option value="Credit Card Limit">Credit Card Limit</option>
-            <option value="Lab Funding Waiver">Lab Funding Waiver</option>
-          </select>
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">Part-Time Sustainability</span>
-          <select
-            value={partTimeFilter}
-            onChange={(e) => setPartTimeFilter(e.target.value)}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value="All">Any</option>
-            <option value="Odd Jobs Cover Living">Odd Jobs Cover Living</option>
-            <option value="Skilled Jobs Needed">Skilled Jobs Needed</option>
-            <option value="Partial Only">Partial Only</option>
-          </select>
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">Language Barrier</span>
-          <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value)}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value="All">Any</option>
-            <option value="English-Friendly">English-Friendly</option>
-            <option value="Bilingual Advantage">Bilingual Advantage</option>
-            <option value="Local Language Required">Local Language Required</option>
-          </select>
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">Min Stay-Back Visa</span>
-          <select
-            value={minStayBack}
-            onChange={(e) => setMinStayBack(Number(e.target.value))}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value={0}>Any Duration</option>
-            <option value={12}>12+ Months</option>
-            <option value={18}>18+ Months</option>
-            <option value={24}>24+ Months</option>
-            <option value={36}>36 Months (3 Years)</option>
-          </select>
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] text-muted-foreground">PR Pathway Difficulty</span>
-          <select
-            value={prDifficulty}
-            onChange={(e) => setPrDifficulty(e.target.value)}
-            className="h-8 w-full rounded-lg border border-border bg-background px-2 text-xs"
-          >
-            <option value="All">Any</option>
-            <option value="Straightforward">Straightforward</option>
-            <option value="Moderate">Moderate</option>
-            <option value="Competitive">Competitive</option>
-          </select>
-        </label>
+        )}
       </div>
     </Card>
   );
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Header & Search + Lifestyle Switcher */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      {/* Header & Lifestyle Selector */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Smart Destination &amp; University Explorer
+            Explore Destinations
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Filter dynamically by BDT budget caps, proof-of-funds style, part-time reality, and living standard.
+            Compare tuition, living tiers, and visa rules in local currency and BDT.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-1">
-          {LIFESTYLE_LABELS.map((tier) => {
-            const active = lifestyleTier === tier.key;
-            return (
-              <button
-                key={tier.key}
-                onClick={() => setLifestyleTier(tier.key)}
-                className={`relative rounded-lg px-3 py-1.5 text-left transition ${
-                  active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {active && (
-                  <motion.div
-                    layoutId="explore-lifestyle-pill"
-                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                    className="absolute inset-0 rounded-lg bg-primary"
-                  />
-                )}
-                <div className="relative z-10 text-xs font-semibold">{tier.title}</div>
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground hidden sm:inline">Living Tier:</span>
+          <div className="flex items-center rounded-xl border border-border bg-card p-1">
+            {LIFESTYLE_LABELS.map((tier) => {
+              const active = lifestyleTier === tier.key;
+              return (
+                <button
+                  key={tier.key}
+                  onClick={() => setLifestyleTier(tier.key)}
+                  className={`relative rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="explore-lifestyle-pill"
+                      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      className="absolute inset-0 rounded-lg bg-primary"
+                    />
+                  )}
+                  <span className="relative z-10">{tier.title}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -438,6 +526,7 @@ export function ExploreClient() {
             onClick={() => setShowFiltersMobile(!showFiltersMobile)}
           >
             <Filter className="h-4 w-4" /> Filters
+            {activeFilterCount > 0 && ` (${activeFilterCount})`}
           </Button>
           <select
             value={sortBy}
@@ -454,30 +543,25 @@ export function ExploreClient() {
 
       {showFiltersMobile && <div className="lg:hidden">{filterPanel}</div>}
 
-      <div className="grid gap-6 lg:grid-cols-[290px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[270px_1fr]">
         <div className="hidden lg:block">{filterPanel}</div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              Showing <strong className="text-foreground">{filteredCountries.length}</strong> of{" "}
-              {countries.length} countries
-            </span>
-            <span>
-              Living tier: <strong className="capitalize text-foreground">{lifestyleTier}</strong>
-            </span>
+          <div className="text-xs text-muted-foreground">
+            Showing <strong className="text-foreground">{filteredCountries.length}</strong> of{" "}
+            {countries.length} countries
           </div>
 
           {filteredCountries.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <p className="font-display text-base font-semibold">
-                No countries match your current filter combination
+                No countries match your current filters
               </p>
               <p className="text-xs text-muted-foreground">
-                Try relaxing the BDT budget sliders or resetting strategic rules.
+                Try relaxing the BDT budget sliders or resetting filters.
               </p>
               <Button onClick={resetFilters} variant="secondary" size="sm">
-                Reset All Filters
+                Reset Filters
               </Button>
             </Card>
           ) : (
@@ -485,7 +569,6 @@ export function ExploreClient() {
               <AnimatePresence mode="popLayout">
                 {filteredCountries.map((c) => {
                   const living = c.livingCostTiers[lifestyleTier];
-                  const firstYearTotal = c.tuitionAvgAnnual + living.total * 12;
                   const isSaved = shortlistCountries.includes(c.slug);
                   const inCompare = compareCountries.includes(c.slug);
 
@@ -499,7 +582,7 @@ export function ExploreClient() {
                       transition={{ duration: 0.2 }}
                     >
                       <Card className="flex h-full flex-col justify-between p-5 hover:border-indigo-500/40 transition">
-                        <div className="space-y-3">
+                        <div className="space-y-3.5">
                           <div className="flex items-start justify-between gap-2">
                             <Link href={`/countries/${c.slug}`} className="group flex items-center gap-2.5">
                               <span className="text-3xl">{c.flagEmoji}</span>
@@ -508,36 +591,23 @@ export function ExploreClient() {
                                   {c.name}
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
-                                  {c.region} • {c.universities?.length || 0} Universities •{" "}
-                                  {c.scholarships?.length || 0} Scholarships
+                                  {c.region} • {c.universities?.length || 0} Unis
                                 </p>
                               </div>
                             </Link>
-                            <div className="flex flex-col items-end gap-1">
-                              <Badge variant={visaBadgeVariant(c.visaPredictability)}>
-                                {c.visaPredictability} Visa
-                              </Badge>
-                              <span className="text-[10px] text-muted-foreground">
-                                Backlog: {c.embassyBacklog}
-                              </span>
-                            </div>
+                            <Badge variant={visaBadgeVariant(c.visaPredictability)}>
+                              {c.visaPredictability} Visa
+                            </Badge>
                           </div>
 
-                          <p className="text-xs text-muted-foreground leading-relaxed">
+                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                             {c.tagline}
                           </p>
 
-                          <div className="flex flex-wrap gap-1.5">
-                            <Badge variant="outline">{c.proofOfFundsStyle}</Badge>
-                            <Badge variant="outline">{c.partTimeSustain}</Badge>
-                            <Badge variant="outline">{c.languageBarrier}</Badge>
-                            <Badge variant="indigo">{c.stayBackMonths} mo Stay-Back</Badge>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border/70 bg-background/60 p-3">
+                          <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/70 bg-background/60 p-3">
                             <div>
                               <div className="text-[10px] uppercase text-muted-foreground">
-                                Avg Tuition / Yr
+                                Tuition/yr
                               </div>
                               <DualCurrency
                                 amount={c.tuitionAvgAnnual}
@@ -548,7 +618,7 @@ export function ExploreClient() {
                             </div>
                             <div>
                               <div className="text-[10px] uppercase text-muted-foreground">
-                                Living ({lifestyleTier}) / Mo
+                                Living/mo
                               </div>
                               <DualCurrency
                                 amount={living.total}
@@ -558,7 +628,7 @@ export function ExploreClient() {
                             </div>
                             <div>
                               <div className="text-[10px] uppercase text-muted-foreground">
-                                Proof of Funds
+                                Solvency
                               </div>
                               <DualCurrency
                                 amount={c.proofOfFundsAmount}
@@ -566,16 +636,11 @@ export function ExploreClient() {
                                 size="sm"
                               />
                             </div>
-                            <div>
-                              <div className="text-[10px] uppercase text-muted-foreground">
-                                Est. 1st Yr Total
-                              </div>
-                              <DualCurrency
-                                amount={firstYearTotal}
-                                currencyCode={c.currencyCode}
-                                size="sm"
-                              />
-                            </div>
+                          </div>
+
+                          <div className="text-[11px] text-muted-foreground">
+                            {c.stayBackMonths} mo stay-back • {c.workHoursCap}h/wk work cap •{" "}
+                            {c.proofOfFundsStyle}
                           </div>
                         </div>
 
@@ -594,7 +659,7 @@ export function ExploreClient() {
                               ) : (
                                 <GitCompare className="h-3.5 w-3.5" />
                               )}
-                              {inCompare ? "In Compare" : "Compare"}
+                              {inCompare ? "Added" : "Compare"}
                             </button>
 
                             <button
@@ -612,7 +677,7 @@ export function ExploreClient() {
 
                           <Link href={`/countries/${c.slug}`}>
                             <Button size="sm">
-                              Deep Dossier <ArrowRight className="h-3.5 w-3.5" />
+                              Open Dossier <ArrowRight className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
                         </div>

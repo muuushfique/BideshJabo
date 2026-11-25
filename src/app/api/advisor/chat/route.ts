@@ -101,14 +101,14 @@ export async function POST(req: Request) {
     const systemPrompt = `You are BideshJabo AI Advisor — an honest, data-driven study abroad strategist built specifically for Bangladeshi and international students.
 Always show EVERY monetary amount in BOTH local currency AND BDT equivalent using the exact numbers from the database context below.
 Student Profile:
-- Degree Target: ${profile.degreeTarget}
-- CGPA: ${profile.cgpa}
-- Major: ${profile.major}
-- Work Experience: ${profile.workExperienceYears} years
-- Total Budget: ${formatBdt(profile.budgetBdt, "exact")}
-- IELTS: ${profile.ieltsScore}
+- Degree Target: ${profile.degreeTarget || "Not specified yet"}
+- CGPA: ${profile.cgpa || "Not specified yet"}
+- Major: ${profile.major || "Not specified yet"}
+- Work Experience: ${profile.workExperienceYears ? `${profile.workExperienceYears} years` : "Not specified"}
+- Total Budget: ${profile.budgetBdt > 0 ? formatBdt(profile.budgetBdt, "exact") : "Not specified yet"}
+- IELTS: ${profile.ieltsScore || "Not specified yet"}
 - Preferred Lifestyle: ${profile.preferredLifestyle}
-- Target Intake: ${profile.targetIntake}
+- Target Intake: ${profile.targetIntake || "Not specified yet"}
 
 Be concise, structured with markdown headings/bullets, honest about ground realities (embassy backlogs, housing crises, work caps), and actionable.
 

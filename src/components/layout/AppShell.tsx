@@ -13,6 +13,7 @@ import {
   Globe2,
   Home,
   ListChecks,
+  LogIn,
   LogOut,
   Menu,
   Moon,
@@ -32,11 +33,11 @@ import { AuthModal } from "./AuthModal";
 import { CommandPalette } from "./CommandPalette";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Command Center", icon: Home },
-  { href: "/explore", label: "Explore Countries", icon: Compass },
-  { href: "/compare", label: "Compare Matrix", icon: GitCompare },
-  { href: "/finances", label: "Finances & Solvency", icon: Calculator },
-  { href: "/journey", label: "Journey Roadmaps", icon: ListChecks },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/compare", label: "Compare", icon: GitCompare },
+  { href: "/finances", label: "Finances", icon: Calculator },
+  { href: "/journey", label: "Roadmaps", icon: ListChecks },
   { href: "/advisor", label: "AI Advisor", icon: Bot },
 ];
 
@@ -53,33 +54,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setCommandOpen,
     journeys,
     compareCountries,
-    shortlistCountries,
     toastMessage,
   } = useWorkspace();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const showBreadcrumbs =
+    pathname.startsWith("/countries/") || pathname.startsWith("/admin");
+
   const breadcrumbs = useMemo(() => {
     const parts = pathname.split("/").filter(Boolean);
-    const crumbs: { label: string; href: string }[] = [{ label: "BideshJabo", href: "/" }];
-    if (parts.length === 0) {
-      crumbs.push({ label: "Command Center", href: "/" });
-      return crumbs;
-    }
-
-    if (parts[0] === "explore") crumbs.push({ label: "Explore", href: "/explore" });
-    else if (parts[0] === "compare") crumbs.push({ label: "Compare Matrix", href: "/compare" });
-    else if (parts[0] === "finances") crumbs.push({ label: "Financial Hub", href: "/finances" });
-    else if (parts[0] === "journey") crumbs.push({ label: "Journey Roadmaps", href: "/journey" });
-    else if (parts[0] === "advisor") crumbs.push({ label: "AI Advisor", href: "/advisor" });
-    else if (parts[0] === "admin") crumbs.push({ label: "Admin Panel", href: "/admin" });
-    else if (parts[0] === "countries") {
+    const crumbs: { label: string; href: string }[] = [
+      { label: "Home", href: "/" },
+    ];
+    if (parts[0] === "admin") {
+      crumbs.push({ label: "Admin Console", href: "/admin" });
+    } else if (parts[0] === "countries") {
       crumbs.push({ label: "Explore", href: "/explore" });
       if (parts[1]) {
         const c = countries.find((item) => item.slug === parts[1]);
         if (c) {
-          crumbs.push({ label: c.region, href: `/explore?region=${encodeURIComponent(c.region)}` });
-          crumbs.push({ label: `${c.flagEmoji} ${c.name}`, href: `/countries/${c.slug}` });
+          crumbs.push({
+            label: `${c.flagEmoji} ${c.name}`,
+            href: `/countries/${c.slug}`,
+          });
         } else {
           crumbs.push({ label: parts[1], href: `/countries/${parts[1]}` });
         }
@@ -98,166 +96,147 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-border bg-card/60 backdrop-blur-xl z-30">
-        <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-sm">
-              <Globe2 className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="font-display text-base font-bold tracking-tight">BideshJabo</div>
-              <div className="text-[10px] text-muted-foreground">Study Abroad OS</div>
-            </div>
-          </Link>
-        </div>
-
-        <div className="px-3 pt-3">
-          <button
-            onClick={() => setCommandOpen(true)}
-            className="flex w-full items-center justify-between rounded-xl border border-border bg-background/80 px-3 py-2 text-xs text-muted-foreground transition hover:border-indigo-500/40 hover:text-foreground"
-          >
-            <span className="flex items-center gap-2">
-              <Search className="h-3.5 w-3.5" /> Quick Jump...
-            </span>
-            <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
-              ⌘K
-            </kbd>
-          </button>
-        </div>
-
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                  active
-                    ? "bg-primary/12 text-primary border border-primary/25"
-                    : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground border border-transparent"
-                )}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </span>
-                {item.href === "/compare" && compareCountries.length > 0 && (
-                  <span className="rounded-full bg-indigo-500/20 px-1.5 py-0.5 font-mono text-[10px] text-indigo-400">
-                    {compareCountries.length}
-                  </span>
-                )}
-                {item.href === "/journey" && journeys.length > 0 && (
-                  <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[10px] text-emerald-400">
-                    {journeys.length}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-
-          <div className="pt-4 mt-4 border-t border-border">
-            <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Shortlisted ({shortlistCountries.length})
-            </div>
-            <div className="space-y-1">
-              {shortlistCountries.slice(0, 5).map((slug) => {
-                const c = countries.find((item) => item.slug === slug);
-                if (!c) return null;
-                return (
-                  <Link
-                    key={slug}
-                    href={`/countries/${slug}`}
-                    className="flex items-center justify-between rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>{c.flagEmoji}</span>
-                      <span>{c.name}</span>
-                    </span>
-                    <span className="font-mono text-[10px]">{c.currencyCode}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-
-        <div className="border-t border-border p-3 space-y-2">
-          <Link
-            href="/admin"
-            className={cn(
-              "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition",
-              pathname.startsWith("/admin")
-                ? "bg-rose-500/15 text-rose-400"
-                : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
-            )}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" /> Admin Console
-          </Link>
-
-          {isGuest ? (
-            <button
-              onClick={() => setAuthModalOpen(true)}
-              className="flex w-full items-center justify-between rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-400 transition hover:bg-indigo-500/20"
-            >
-              <span>Guest Mode • Sync Account</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-background/70 px-3 py-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1 text-xs font-semibold truncate">
-                  <UserCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span className="truncate">{user?.name}</span>
-                </div>
-                <div className="text-[10px] text-muted-foreground truncate">
-                  {user?.email}
-                </div>
-              </div>
-              <button
-                onClick={logout}
-                title="Sign Out"
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col lg:pl-64 min-w-0">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
-          <div className="flex items-center gap-3 min-w-0">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {/* Standard Top Navigation Header */}
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          {/* Left: Brand */}
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-lg border border-border p-2 text-muted-foreground lg:hidden"
+              className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground lg:hidden"
               aria-label="Open menu"
             >
               <Menu className="h-4 w-4" />
             </button>
 
-            <nav className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-sm">
+                <Globe2 className="h-4 w-4" />
+              </div>
+              <span className="font-display text-base font-bold tracking-tight">
+                BideshJabo
+              </span>
+            </Link>
+          </div>
+
+          {/* Center: Clean Horizontal Nav */}
+          <nav className="hidden lg:flex items-center gap-1 rounded-xl border border-border/70 bg-card/60 p-1">
+            {NAV_ITEMS.map((item) => {
+              const active =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
+
+              const badgeCount =
+                item.href === "/compare"
+                  ? compareCountries.length
+                  : item.href === "/journey"
+                  ? journeys.length
+                  : 0;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "relative inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="top-nav-active-pill"
+                      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      className="absolute inset-0 rounded-lg bg-secondary shadow-sm"
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
+                  {badgeCount > 0 && (
+                    <span className="relative z-10 rounded-full bg-indigo-500/20 px-1.5 py-0.2 font-mono text-[10px] text-indigo-400">
+                      {badgeCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right: Utilities & Account */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCommandOpen(true)}
+              title="Quick Search (Cmd/Ctrl + K)"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card/70 px-2.5 py-1.5 text-xs text-muted-foreground transition hover:border-indigo-500/40 hover:text-foreground"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Search</span>
+              <kbd className="hidden md:inline rounded border border-border bg-secondary px-1 py-0.5 font-mono text-[10px]">
+                ⌘K
+              </kbd>
+            </button>
+
+            <button
+              onClick={toggleFormatMode}
+              title="Toggle BDT Display (Compact Lakh/Crore vs Exact)"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/70 px-2.5 py-1.5 font-mono text-xs font-medium transition hover:border-emerald-500/40"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span>BDT: {formatMode === "compact" ? "Compact" : "Exact"}</span>
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg border border-border bg-card/70 p-2 text-muted-foreground transition hover:text-foreground"
+              aria-label="Toggle dark or light theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+
+            {isGuest ? (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Sign In</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card/80 px-2.5 py-1">
+                <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="hidden sm:inline max-w-[110px] truncate text-xs font-medium">
+                  {user?.name}
+                </span>
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Contextual Breadcrumbs only on deep/nested pages */}
+        {showBreadcrumbs && (
+          <div className="border-t border-border/60 bg-card/30">
+            <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 py-2 text-xs text-muted-foreground sm:px-6 lg:px-8">
               {breadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={crumb.href + idx}>
-                  {idx > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />}
+                  {idx > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-50" />}
                   <Link
                     href={crumb.href}
                     className={cn(
-                      "truncate transition hover:text-foreground",
-                      idx === breadcrumbs.length - 1
-                        ? "font-medium text-foreground"
-                        : ""
+                      "transition hover:text-foreground",
+                      idx === breadcrumbs.length - 1 ? "font-medium text-foreground" : ""
                     )}
                   >
                     {crumb.label}
@@ -266,50 +245,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
           </div>
+        )}
+      </header>
 
+      {/* Main Content */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        {children}
+      </main>
+
+      {/* Clean Minimal Footer */}
+      <footer className="border-t border-border/70 bg-card/30 no-print">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCommandOpen(true)}
-              className="flex sm:hidden items-center justify-center rounded-lg border border-border p-2 text-muted-foreground"
-              aria-label="Search"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-
-            {/* BDT Format Toggle */}
-            <button
-              onClick={toggleFormatMode}
-              title="Switch BDT Display (Compact Lakh/Crore vs Exact)"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 font-mono text-xs font-medium transition hover:border-emerald-500/40"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span>BDT: {formatMode === "compact" ? "13.0L" : "1,300,000"}</span>
-            </button>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="rounded-lg border border-border bg-card p-2 text-muted-foreground transition hover:text-foreground"
-              aria-label="Toggle dark/light mode"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            {/* Floating AI Advisor Trigger */}
-            <button
-              onClick={() => setAdvisorOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ask AI</span>
-            </button>
+            <Globe2 className="h-4 w-4 text-indigo-400" />
+            <span className="font-semibold text-foreground">BideshJabo</span>
+            <span>• Study Abroad Research, Solvency &amp; Advisory OS</span>
           </div>
-        </header>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/explore" className="hover:text-foreground">Explore</Link>
+            <Link href="/compare" className="hover:text-foreground">Compare</Link>
+            <Link href="/finances" className="hover:text-foreground">Finances</Link>
+            <Link href="/journey" className="hover:text-foreground">Roadmaps</Link>
+            <Link href="/advisor" className="hover:text-foreground">AI Advisor</Link>
+            <Link href="/admin" className="inline-flex items-center gap-1 hover:text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5" /> Admin
+            </Link>
+          </div>
+        </div>
+      </footer>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 max-w-[1440px] w-full mx-auto">
-          {children}
-        </main>
-      </div>
+      {/* Floating Ask AI Pill (hidden on /advisor & /admin) */}
+      {!pathname.startsWith("/advisor") && !pathname.startsWith("/admin") && (
+        <button
+          onClick={() => setAdvisorOpen(true)}
+          className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition hover:bg-indigo-500 active:scale-95 no-print"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Ask AI Advisor
+        </button>
+      )}
 
       {/* Mobile Navigation Drawer */}
       <AnimatePresence>
@@ -327,7 +301,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 360, damping: 34 }}
-              className="relative z-10 flex w-72 flex-col border-r border-border bg-card p-4"
+              className="relative z-10 flex w-72 flex-col border-r border-border bg-card p-5"
             >
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2 font-display font-bold">
@@ -370,7 +344,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <ShieldCheck className="h-4 w-4" /> Admin Console
                 </Link>
               </nav>
-              <div className="border-t border-border pt-3">
+              <div className="border-t border-border pt-3 space-y-2">
+                <button
+                  onClick={toggleFormatMode}
+                  className="w-full rounded-xl border border-border py-2 font-mono text-xs"
+                >
+                  BDT Mode: {formatMode === "compact" ? "Compact (13.0L)" : "Exact"}
+                </button>
                 {isGuest ? (
                   <button
                     onClick={() => {
@@ -379,7 +359,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     }}
                     className="w-full rounded-xl bg-primary py-2 text-xs font-semibold text-primary-foreground"
                   >
-                    Sign In / Sync Guest Data
+                    Sign In / Save Progress
                   </button>
                 ) : (
                   <button
@@ -402,7 +382,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            className="fixed bottom-5 right-5 z-50 rounded-xl border border-indigo-500/30 bg-card/95 px-4 py-2.5 text-xs font-medium text-foreground shadow-xl backdrop-blur-md"
+            className="fixed bottom-16 right-5 z-50 rounded-xl border border-indigo-500/30 bg-card/95 px-4 py-2.5 text-xs font-medium text-foreground shadow-xl backdrop-blur-md"
           >
             {toastMessage}
           </motion.div>
